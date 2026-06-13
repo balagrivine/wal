@@ -7,21 +7,29 @@
 #define WAL_FILE_MODE 0644
 #define FILE_PATH_MAX 256
 
+typedef enum{
+    WAL_SYNC_NONE = 0 /* The WAL is never made durable on disk */,
+    WAL_SYNC_INTERVAL = 1 /* WAL is sync'd to durable storage on a configured interval */,
+    WAL_SYNC_IMMEDIATE = 2 /*The WAL is sync'd to durable storage on every write that touches the WAL */
+} wal_sync_mode;
+
 typedef struct{
     int fd;
     char file_path[FILE_PATH_MAX];
     _Atomic(uint32_t) is_open;
+    wal_sync_mode sync_mode;
 } write_ahead_log;
 
 /*
  * wal_open
  * opens the WAL file for IO operations
  * @param wal the WAL to be opened
- * @wal_file_path the file backing the WAL
+ * @param wal_file_path the file backing the WAL
+ * @sync_mode the write ahead log disk synchrinization mode
  * @return 0 if successful, -1 if unsuccessful
  */
 int
-wal_open(write_ahead_log **wal, char *wal_file_path);
+wal_open(write_ahead_log **wal, char *wal_file_path, wal_sync_mode sync_mode);
 
 /*
  * wal_close

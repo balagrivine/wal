@@ -9,7 +9,7 @@
 void test_wal_open(){
     char wal_file_path[128] = "file.wal";
     write_ahead_log *wal = NULL;
-    int ret = wal_open(&wal, wal_file_path);
+    int ret = wal_open(&wal, wal_file_path, WAL_SYNC_NONE);
     assert(ret == 0);
     assert(wal != NULL);
     assert(wal->is_open == 1);
@@ -22,7 +22,7 @@ void test_wal_open(){
 void test_wal_close(){
     char wal_file_path[128] = "file.wal";
     write_ahead_log *wal = NULL;
-    wal_open(&wal, wal_file_path);
+    wal_open(&wal, wal_file_path, WAL_SYNC_NONE);
     int ret = wal_close(wal);
     assert(ret == 0);
 
@@ -34,7 +34,7 @@ void test_wal_write(){
     unsigned char data[128] = "Hello world";
     write_ahead_log *wal = NULL;
 
-    if(wal_open(&wal, wal_file_path) != 0) return;
+    if(wal_open(&wal, wal_file_path, WAL_SYNC_NONE) != 0) return;
 
     // Happy case: successfully writes data to file if WAL is valid
     int ret = wal_write(wal, data, sizeof(data));

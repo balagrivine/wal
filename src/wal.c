@@ -10,7 +10,7 @@
 #include "wal.h"
 
 int
-wal_open(write_ahead_log **wal, char *wal_file_path){
+wal_open(write_ahead_log **wal, char *wal_file_path, wal_sync_mode sync_mode){
     if (!wal || !wal_file_path){
         return -1;
     }
@@ -32,6 +32,7 @@ wal_open(write_ahead_log **wal, char *wal_file_path){
     }
 
     w->fd = fd;
+    w->sync_mode = sync_mode;
 
     int result = snprintf(w->file_path, sizeof(w->file_path), "%s", wal_file_path);
     if (result == -1 || result >= (int)sizeof(w->file_path)){
@@ -73,7 +74,7 @@ wal_close(write_ahead_log *wal){
 
 int
 wal_write(write_ahead_log *wal, const void *data, uint32_t buffer_len){
-    if(!wal || !data || buffer_len <= 0){
+    if(!wal || !data || buffer_len == 0){
         return -1;
     }
 
@@ -82,9 +83,18 @@ wal_write(write_ahead_log *wal, const void *data, uint32_t buffer_len){
         return -1;
     }
 
-    ssize_t written = write(wal->fd, data, buffer_len);
-    if (written != buffer_len){
-        return -1;
+    ssize_t total = 0;
+    while(total < buffer_len){
+        ssize_t written = write(wal->fd, (uint8_t*)data + total, buffer_len - total);
+        if (written <= 0){
+            return -1;
+        }
+
+        total += written;
+    }
+
+    if (wal->sync_mode == WAL_SYNC_IMMEDIATE){
+        if(fsync(wal->fd) != 0) return -1;
     }
 
     return 0;
