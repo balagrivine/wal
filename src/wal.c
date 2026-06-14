@@ -20,7 +20,7 @@ wal_open(write_ahead_log **wal, char *wal_file_path, wal_sync_mode sync_mode){
         return -1;
     }
 
-    int fd = open(wal_file_path, O_RDWR | O_CREAT | O_APPEND, WAL_FILE_MODE);
+    int fd = open(wal_file_path, O_RDWR | O_CREAT, WAL_FILE_MODE);
     if(fd < 0){
         return -1;
     }
@@ -42,6 +42,7 @@ wal_open(write_ahead_log **wal, char *wal_file_path, wal_sync_mode sync_mode){
     }
 
     atomic_store(&w->is_open, 1);
+    atomic_init(&w->current_file_size, 0);
 
     *wal = w;
     return 0;
@@ -83,14 +84,17 @@ wal_write(write_ahead_log *wal, const void *data, uint32_t buffer_len){
         return -1;
     }
 
+    off_t offset = atomic_fetch_add(&wal->current_file_size, buffer_len);
+
     ssize_t total = 0;
     while(total < buffer_len){
-        ssize_t written = write(wal->fd, (uint8_t*)data + total, buffer_len - total);
+        ssize_t written = pwrite(wal->fd, (uint8_t*)data + total, buffer_len - total, offset);
         if (written <= 0){
             return -1;
         }
 
         total += written;
+        offset += written;
     }
 
     if (wal->sync_mode == WAL_SYNC_IMMEDIATE){

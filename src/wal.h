@@ -17,6 +17,7 @@ typedef struct{
     int fd;
     char file_path[FILE_PATH_MAX];
     _Atomic(uint32_t) is_open;
+    _Atomic(uint64_t) current_file_size;
     wal_sync_mode sync_mode;
 } write_ahead_log;
 
