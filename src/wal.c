@@ -88,13 +88,12 @@ wal_write(write_ahead_log *wal, const void *data, uint32_t buffer_len){
 
     ssize_t total = 0;
     while(total < buffer_len){
-        ssize_t written = pwrite(wal->fd, (uint8_t*)data + total, buffer_len - total, offset);
+        ssize_t written = pwrite(wal->fd, (uint8_t*)data + total, buffer_len - total, offset + total);
         if (written <= 0){
             return -1;
         }
 
         total += written;
-        offset += written;
     }
 
     if (wal->sync_mode == WAL_SYNC_IMMEDIATE){
